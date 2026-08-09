@@ -64,8 +64,8 @@ if ($curp != "" || $plantel != "" || $estatus != "") {
 
         if ($plantel != "") {
 
-            $sql .= " AND UPPER(plantel_alumno) LIKE :plantel";
-            $parametros["plantel"] = "%" . strtoupper($plantel) . "%";
+            $sql .= " AND UPPER(plantel_alumno) = :plantel";
+            $parametros["plantel"] =  strtoupper($plantel) ;
 
         }
 
@@ -76,7 +76,7 @@ if ($curp != "" || $plantel != "" || $estatus != "") {
 
         }
 
-        $sql .= " ORDER BY apaterno_alumno,nombre_alumno LIMIT 100";
+        $sql .= " ORDER BY apaterno_alumno,nombre_alumno";
 
         $stmt = $conexion->prepare($sql);
         $stmt->execute($parametros);
@@ -129,7 +129,7 @@ $jsonVisible = isset($_GET["json"]);
 
 <b>CURP:</b> búsqueda parcial (mínimo 10 caracteres).<br>
 
-<b>Plantel:</b> búsqueda parcial.<br>
+<b>Plantel:</b> búsqueda exacta.<br>
 
 <b>Estatus:</b> búsqueda exacta.
 

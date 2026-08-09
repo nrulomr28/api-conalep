@@ -1,5 +1,10 @@
 config.php
+
 *.bak
 *.log
-*.zip
-.env
+*.zip*
+*.env*
+
+config/google.php
+config/google.php.backup
+config/*.local.php
