@@ -420,14 +420,10 @@ try {
 
      */
 
-    $fechaExpiracion = date(
-
-        'Y-m-d H:i:s',
-
-        time() + 3600
-
-    );
-
+$fechaExpiracion = date(
+    'Y-m-d H:i:s',
+    time() + (7 * 24 * 60 * 60)
+);
 
 
 

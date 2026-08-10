@@ -90,7 +90,6 @@ $sql = "
 
     ORDER BY apaterno_alumno, nombre_alumno
 
-    LIMIT 100
 
 ";
 
@@ -108,7 +107,7 @@ $stmt->execute([
 
 
 
-$resultados = $stmt->fetchAll();
+$resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 
