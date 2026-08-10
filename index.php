@@ -1,6 +1,14 @@
 <?php
 
+
+
+declare(strict_types=1);
+
+
+
 session_start();
+
+
 
 if (!isset($_SESSION["usuario_google"])) {
 
@@ -10,549 +18,1636 @@ if (!isset($_SESSION["usuario_google"])) {
 
 }
 
+
+
 $usuario = $_SESSION["usuario_google"];
 
-require_once "config.php";
 
-$resultados = [];
 
-$totalResultados = 0;
+function e(?string $valor): string
 
-$buscar = false;
-$mensaje = "";
+{
 
-$curp = trim($_GET["curp"] ?? "");
+    return htmlspecialchars(
 
-$plantel = trim($_GET["plantel"] ?? "");
+        $valor ?? '',
 
-$estatus = trim($_GET["estatus"] ?? "");
+        ENT_QUOTES,
 
-if ($curp != "" || $plantel != "" || $estatus != "") {
+        'UTF-8'
 
-    if ($curp != "" && strlen($curp) < 10) {
-
-        $mensaje = "Para buscar por CURP debe ingresar al menos 10 caracteres.";
-
-    } else {
-
-        $buscar = true;
-
-        $sql = "SELECT
-                    curp_alumno,
-                    nia_alumno,
-                    apaterno_alumno,
-                    amaterno_alumno,
-                    nombre_alumno,
-                    plantel_alumno,
-                    direccion_alumno,
-                    estatus_alumno,
-                    menorEdad_alumno,
-                    nombre_tutor,
-                    curp_tutor,
-                    telefono_tutor
-                FROM conalep_1_2026
-                WHERE 1=1";
-
-        $parametros = [];
-
-        if ($curp != "") {
-
-            $sql .= " AND curp_alumno LIKE :curp";
-            $parametros["curp"] = "%" . strtoupper($curp) . "%";
-
-        }
-
-        if ($plantel != "") {
-
-            $sql .= " AND UPPER(plantel_alumno) LIKE :plantel";
-            $parametros["plantel"] = "%" . strtoupper($plantel) . "%";
-
-        }
-
-        if ($estatus != "") {
-
-            $sql .= " AND estatus_alumno = :estatus";
-            $parametros["estatus"] = $estatus;
-
-        }
-
-        $sql .= " ORDER BY apaterno_alumno,nombre_alumno LIMIT 100";
-
-        $stmt = $conexion->prepare($sql);
-        $stmt->execute($parametros);
-
-        $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $totalResultados = count($resultados);
-
-        if ($totalResultados == 0) {
-
-            $mensaje = "No se encontraron registros para los criterios capturados.";
-
-        }
-
-    }
+    );
 
 }
 
-$jsonVisible = isset($_GET["json"]);
+
 
 ?>
 
-
 <!DOCTYPE html>
 
+
+
 <html lang="es">
+
+
 
 <head>
 
 
 
-<meta charset="utf-8">
+    <meta charset="UTF-8">
 
 
 
-<title>Consulta CONALEP</title>
+    <meta
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+        name="viewport"
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        content="width=device-width, initial-scale=1">
+
+
+
+    <title>
+
+        API CONALEP | Inicio
+
+    </title>
+
+
+
+    <!-- Bootstrap -->
+
+    <link
+
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+
+        rel="stylesheet">
+
+
+
+    <!-- Bootstrap Icons -->
+
+    <link
+
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+
+        rel="stylesheet">
+
+
+
+
+
+    <style>
+
+
+
+        body {
+
+            background: #f4f6f8;
+
+            color: #212529;
+
+        }
+
+
+
+        /*
+
+        |--------------------------------------------------------------------------
+
+        | ENCABEZADO
+
+        |--------------------------------------------------------------------------
+
+        */
+
+
+
+        .portal-header {
+
+            background: #198754;
+
+            color: #ffffff;
+
+        }
+
+
+
+        .portal-title {
+
+            font-size: 1.8rem;
+
+            font-weight: 600;
+
+            letter-spacing: .2px;
+
+        }
+
+
+
+        .portal-subtitle {
+
+            opacity: .9;
+
+        }
+
+
+
+        .user-name {
+
+            font-weight: 600;
+
+        }
+
+
+
+        /*
+
+        |--------------------------------------------------------------------------
+
+        | TARJETAS
+
+        |--------------------------------------------------------------------------
+
+        */
+
+
+
+        .module-card {
+
+            height: 100%;
+
+            border: 1px solid #dee2e6;
+
+            border-radius: .65rem;
+
+
+
+            transition:
+
+                transform .15s ease,
+
+                box-shadow .15s ease,
+
+                border-color .15s ease;
+
+
+
+            background: #ffffff;
+
+        }
+
+
+
+        .module-card:hover {
+
+            transform: translateY(-3px);
+
+
+
+            box-shadow:
+
+                0 .5rem 1rem rgba(0, 0, 0, .10);
+
+
+
+            border-color: #b8cfc3;
+
+        }
+
+
+
+        .module-icon {
+
+            width: 52px;
+
+            height: 52px;
+
+
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+
+
+            border-radius: 10px;
+
+
+
+            font-size: 1.5rem;
+
+
+
+            background: #e8f5ee;
+
+            color: #198754;
+
+
+
+            margin-bottom: 1rem;
+
+        }
+
+
+
+        .module-card h5 {
+
+            font-weight: 600;
+
+            margin-bottom: .6rem;
+
+        }
+
+
+
+        .module-card p {
+
+            color: #6c757d;
+
+            min-height: 48px;
+
+        }
+
+
+
+        /*
+
+        |--------------------------------------------------------------------------
+
+        | ESTADO
+
+        |--------------------------------------------------------------------------
+
+        */
+
+
+
+        .status-dot {
+
+            width: 9px;
+
+            height: 9px;
+
+
+
+            display: inline-block;
+
+
+
+            border-radius: 50%;
+
+
+
+            background: #198754;
+
+
+
+            margin-right: 6px;
+
+        }
+
+
+
+        /*
+
+        |--------------------------------------------------------------------------
+
+        | MAPA DEL SITIO
+
+        |--------------------------------------------------------------------------
+
+        */
+
+
+
+        .site-map {
+
+            background: #ffffff;
+
+
+
+            border: 1px solid #dee2e6;
+
+            border-left: 4px solid #198754;
+
+
+
+            border-radius: .5rem;
+
+        }
+
+
+
+        .site-map-title {
+
+            font-weight: 600;
+
+        }
+
+
+
+        .site-map ul {
+
+            margin-bottom: 0;
+
+        }
+
+
+
+        .site-map li {
+
+            margin-bottom: .35rem;
+
+        }
+
+
+
+        .site-map a {
+
+            color: #198754;
+
+            text-decoration: none;
+
+        }
+
+
+
+        .site-map a:hover {
+
+            text-decoration: underline;
+
+        }
+
+
+
+        /*
+
+        |--------------------------------------------------------------------------
+
+        | BREADCRUMB
+
+        |--------------------------------------------------------------------------
+
+        */
+
+
+
+        .breadcrumb {
+
+            margin-bottom: 0;
+
+        }
+
+
+
+        .breadcrumb-item.active {
+
+            color: #6c757d;
+
+        }
+
+
+
+        /*
+
+        |--------------------------------------------------------------------------
+
+        | FOOTER
+
+        |--------------------------------------------------------------------------
+
+        */
+
+
+
+        .portal-footer {
+
+            color: #6c757d;
+
+            font-size: .85rem;
+
+        }
+
+
+
+    </style>
+
 
 
 </head>
 
 
 
-<body class="bg-light">
 
-<div class="small text-muted mt-2">
 
-<b>CURP:</b> b煤squeda parcial (m铆nimo 10 caracteres).<br>
+<body>
 
-<b>Plantel:</b> b煤squeda parcial.<br>
 
-<b>Estatus:</b> b煤squeda exacta.
+
+<div class="container py-4">
+
+
+
+
+
+    <!-- ============================================================
+
+         ENCABEZADO
+
+         ============================================================ -->
+
+
+
+    <div class="card shadow-sm mb-4">
+
+
+
+        <div class="portal-header">
+
+
+
+            <div class="p-4">
+
+
+
+                <div class="row align-items-center">
+
+
+
+                    <!-- T脥TULO -->
+
+
+
+                    <div class="col-md-8">
+
+
+
+                        <div class="portal-title">
+
+                            API CONALEP
+
+                        </div>
+
+
+
+                        <div class="portal-subtitle">
+
+                            Plataforma de consulta y administraci贸n
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+
+
+                    <!-- USUARIO -->
+
+
+
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+
+
+
+                        <div class="user-name">
+
+
+
+                            <?= e($usuario["nombre"] ?? '') ?>
+
+
+
+                        </div>
+
+
+
+                        <div class="small">
+
+
+
+                            <?= e($usuario["correo"] ?? '') ?>
+
+
+
+                        </div>
+
+
+
+                        <a
+
+                            href="logout.php"
+
+                            class="btn btn-sm btn-light mt-2">
+
+
+
+                            <i class="bi bi-box-arrow-right"></i>
+
+
+
+                            Cerrar sesi贸n
+
+
+
+                        </a>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+        <!-- BREADCRUMB -->
+
+
+
+        <div class="card-body py-3">
+
+
+
+            <nav aria-label="breadcrumb">
+
+
+
+                <ol class="breadcrumb">
+
+
+
+                    <li class="breadcrumb-item active">
+
+
+
+                        Inicio
+
+
+
+                    </li>
+
+
+
+                </ol>
+
+
+
+            </nav>
+
+
+
+        </div>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <!-- ============================================================
+
+         INTRODUCCI脫N
+
+         ============================================================ -->
+
+
+
+    <div class="mb-4">
+
+
+
+        <h4 class="mb-2">
+
+
+
+            Centro de operaci贸n
+
+
+
+        </h4>
+
+
+
+        <p class="text-muted mb-0">
+
+
+
+            Seleccione una de las opciones disponibles para
+
+            consultar informaci贸n, administrar el acceso a la
+
+            API o realizar pruebas.
+
+
+
+        </p>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <!-- ============================================================
+
+         M脫DULOS
+
+         ============================================================ -->
+
+
+
+    <div class="row g-4">
+
+
+
+
+
+        <!-- ========================================================
+
+             CONSULTA
+
+             ======================================================== -->
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+            <a
+
+                href="consulta.php"
+
+                class="text-decoration-none text-dark">
+
+
+
+                <div class="card module-card shadow-sm">
+
+
+
+                    <div class="card-body p-4">
+
+
+
+                        <div class="module-icon">
+
+
+
+                            <i class="bi bi-search"></i>
+
+
+
+                        </div>
+
+
+
+
+
+                        <h5>
+
+
+
+                            Consulta CONALEP
+
+
+
+                        </h5>
+
+
+
+
+
+                        <p>
+
+
+
+                            Consulta informaci贸n de alumnos
+
+                            mediante CURP, plantel o estatus.
+
+
+
+                        </p>
+
+
+
+
+
+                        <span class="btn btn-success btn-sm">
+
+
+
+                            <i class="bi bi-arrow-right"></i>
+
+
+
+                            Ir a consulta
+
+
+
+                        </span>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            </a>
+
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- ========================================================
+
+             ADMINISTRACI脫N API
+
+             ======================================================== -->
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+            <a
+
+                href="api_admin.php"
+
+                class="text-decoration-none text-dark">
+
+
+
+                <div class="card module-card shadow-sm">
+
+
+
+                    <div class="card-body p-4">
+
+
+
+                        <div class="module-icon">
+
+
+
+                            <i class="bi bi-shield-lock"></i>
+
+
+
+                        </div>
+
+
+
+
+
+                        <h5>
+
+
+
+                            Administraci贸n API
+
+
+
+                        </h5>
+
+
+
+
+
+                        <p>
+
+
+
+                            Consulte y administre el ciclo de
+
+                            vida de los tokens de acceso.
+
+
+
+                        </p>
+
+
+
+
+
+                        <span class="btn btn-primary btn-sm">
+
+
+
+                            <i class="bi bi-gear"></i>
+
+
+
+                            Administrar API
+
+
+
+                        </span>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            </a>
+
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- ========================================================
+
+             BIT脕CORA
+
+             ======================================================== -->
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+            <a
+
+                href="api_auditoria.php"
+
+                class="text-decoration-none text-dark">
+
+
+
+                <div class="card module-card shadow-sm">
+
+
+
+                    <div class="card-body p-4">
+
+
+
+                        <div class="module-icon">
+
+
+
+                            <i class="bi bi-journal-text"></i>
+
+
+
+                        </div>
+
+
+
+
+
+                        <h5>
+
+
+
+                            Bit谩cora de consultas
+
+
+
+                        </h5>
+
+
+
+
+
+                        <p>
+
+
+
+                            Consulte las operaciones realizadas
+
+                            mediante la API y su trazabilidad.
+
+
+
+                        </p>
+
+
+
+
+
+                        <span class="btn btn-secondary btn-sm">
+
+
+
+                            <i class="bi bi-list-check"></i>
+
+
+
+                            Ver bit谩cora
+
+
+
+                        </span>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            </a>
+
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- ========================================================
+
+             CONSOLA DE PRUEBAS
+
+             ======================================================== -->
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+            <a
+
+                href="api_demo.php"
+
+                class="text-decoration-none text-dark">
+
+
+
+                <div class="card module-card shadow-sm">
+
+
+
+                    <div class="card-body p-4">
+
+
+
+                        <div class="module-icon">
+
+
+
+                            <i class="bi bi-terminal"></i>
+
+
+
+                        </div>
+
+
+
+
+
+                        <h5>
+
+
+
+                            Consola de pruebas
+
+
+
+                        </h5>
+
+
+
+
+
+                        <p>
+
+
+
+                            Realice pruebas controladas de los
+
+                            endpoints disponibles de la API.
+
+
+
+                        </p>
+
+
+
+
+
+                        <span class="btn btn-warning btn-sm">
+
+
+
+                            <i class="bi bi-play"></i>
+
+
+
+                            Abrir consola
+
+
+
+                        </span>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            </a>
+
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- ========================================================
+
+             DOCUMENTACI脫N
+
+             ======================================================== -->
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+            <div class="card module-card shadow-sm">
+
+
+
+                <div class="card-body p-4">
+
+
+
+                    <div class="module-icon">
+
+
+
+                        <i class="bi bi-book"></i>
+
+
+
+                    </div>
+
+
+
+
+
+                    <h5>
+
+
+
+                        Documentaci贸n API
+
+
+
+                    </h5>
+
+
+
+
+
+                    <p>
+
+
+
+                        Documentaci贸n t茅cnica, endpoints,
+
+                        autenticaci贸n y ejemplos de consumo.
+
+
+
+                    </p>
+
+
+
+
+
+                    <span class="badge bg-secondary">
+
+
+
+                        Pr贸ximamente
+
+
+
+                    </span>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- ========================================================
+
+             ESTADO
+
+             ======================================================== -->
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+            <div class="card module-card shadow-sm">
+
+
+
+                <div class="card-body p-4">
+
+
+
+                    <div class="module-icon">
+
+
+
+                        <i class="bi bi-activity"></i>
+
+
+
+                    </div>
+
+
+
+
+
+                    <h5>
+
+
+
+                        Estado de API
+
+
+
+                    </h5>
+
+
+
+
+
+                    <p>
+
+
+
+                        Estado general de los servicios,
+
+                        conectividad y disponibilidad.
+
+
+
+                    </p>
+
+
+
+
+
+                    <span class="badge bg-success">
+
+
+
+                        <span class="status-dot"></span>
+
+
+
+                        API V1 operativa
+
+
+
+                    </span>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <!-- ============================================================
+
+         MAPA DEL SITIO
+
+         ============================================================ -->
+
+
+
+    <div class="site-map shadow-sm mt-5">
+
+
+
+        <div class="card-body p-4">
+
+
+
+            <div class="site-map-title mb-3">
+
+
+
+                <i class="bi bi-diagram-3"></i>
+
+
+
+                Mapa del sitio
+
+
+
+            </div>
+
+
+
+
+
+            <div class="row">
+
+
+
+
+
+                <!-- CONSULTA -->
+
+
+
+                <div class="col-md-4 mb-4 mb-md-0">
+
+
+
+                    <strong>
+
+
+
+                        <i class="bi bi-search"></i>
+
+
+
+                        Consulta
+
+
+
+                    </strong>
+
+
+
+
+
+                    <ul class="mt-2 ps-4">
+
+
+
+                        <li>
+
+
+
+                            <a href="consulta.php">
+
+
+
+                                Consulta web
+
+
+
+                            </a>
+
+
+
+                        </li>
+
+
+
+                    </ul>
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <!-- API -->
+
+
+
+                <div class="col-md-4 mb-4 mb-md-0">
+
+
+
+                    <strong>
+
+
+
+                        <i class="bi bi-braces"></i>
+
+
+
+                        API V1
+
+
+
+                    </strong>
+
+
+
+
+
+                    <ul class="mt-2 ps-4">
+
+
+
+                        <li>
+
+                            Autenticaci贸n
+
+                        </li>
+
+
+
+                        <li>
+
+                            Consulta por CURP
+
+                        </li>
+
+
+
+                        <li>
+
+                            Consulta por plantel
+
+                        </li>
+
+
+
+                        <li>
+
+                            Consulta por estatus
+
+                        </li>
+
+
+
+                    </ul>
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <!-- ADMIN -->
+
+
+
+                <div class="col-md-4">
+
+
+
+                    <strong>
+
+
+
+                        <i class="bi bi-shield-check"></i>
+
+
+
+                        Administraci贸n
+
+
+
+                    </strong>
+
+
+
+
+
+                    <ul class="mt-2 ps-4">
+
+
+
+                        <li>
+
+
+
+                            <a href="api_admin.php">
+
+
+
+                                Administraci贸n de tokens
+
+
+
+                            </a>
+
+
+
+                        </li>
+
+
+
+                        <li>
+
+
+
+                            <a href="api_auditoria.php">
+
+
+
+                                Bit谩cora de consultas
+
+
+
+                            </a>
+
+
+
+                        </li>
+
+
+
+                        <li>
+
+
+
+                            <a href="api_demo.php">
+
+
+
+                                Consola de pruebas
+
+
+
+                            </a>
+
+
+
+                        </li>
+
+
+
+                    </ul>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <!-- ============================================================
+
+         INFORMACI脫N DE SESI脫N
+
+         ============================================================ -->
+
+
+
+    <div class="text-center portal-footer mt-4">
+
+
+
+        API CONALEP 路 V1
+
+
+
+        <span class="mx-2">|</span>
+
+
+
+        Sesi贸n autenticada
+
+
+
+    </div>
+
+
+
+
 
 </div>
 
-<div class="container mt-4">
 
-<div class="card shadow">
 
-<div class="card-header bg-success text-white">
 
-<div class="d-flex justify-content-between align-items-center">
 
-<div>
+<!-- Bootstrap JS -->
 
 
-<h4 class="mb-0">Consulta de Alumnos CONALEP</h4>
 
-<small>Sistema de consulta</small>
+<script
 
-</div>
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
 
-<div class="text-end">
-
-<strong><?= htmlspecialchars($usuario["nombre"]) ?></strong><br>
-
-<small><?= htmlspecialchars($usuario["correo"]) ?></small>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="card-body">
-
-<form method="GET">
-
-<div class="row">
-
-<div class="col-md-4 mb-3">
-
-<label class="form-label">CURP</label>
-
-<input
-type="text"
-name="curp"
-maxlength="18"
-placeholder="M铆nimo 10 caracteres"
-class="form-control"
-value="<?= htmlspecialchars($curp) ?>">
-
-
-</div>
-
-
-<div class="col-md-4 mb-3">
-
-<label class="form-label">Plantel</label>
-
-<input
-type="text"
-name="plantel"
-placeholder="B煤squeda parcial"
-class="form-control"
-value="<?= htmlspecialchars($plantel) ?>">
-
-
-</div>
-
-<div class="col-md-4 mb-3">
-
-<label class="form-label">Estatus</label>
-
-<input
-type="text"
-name="estatus"
-class="form-control"
-
-value="<?= htmlspecialchars($estatus) ?>">
-
-
-</div>
-
-</div>
-
-<button class="btn btn-success">
-
-Consultar
-
-</button>
-
-<button
-type="submit"
-name="json"
-value="1"
-class="btn btn-info">
-
-Mostrar JSON
-
-</button>
-
-
-
-<a href="logout.php" class="btn btn-outline-secondary">
-
-Cerrar sesi贸n
-
-</a>
-
-</form>
-
-<hr>
-
-
-<?php if (!$buscar): ?>
-<div class="alert alert-secondary">
-Ingrese al menos un criterio de b煤squeda (CURP, Plantel o Estatus).
-</div>
-<?php else: ?>
-<div class="alert alert-info">
-<strong><?= number_format($totalResultados) ?></strong>
-<?= $totalResultados == 1 ? "registro encontrado." : "registros encontrados."; ?>
-</div>
-
-
-<?php if ($totalResultados == 0): ?>
-
-<div class="alert alert-warning">
-No se encontraron registros.
-</div>
-<?php else: ?>
-
-<div class="table-responsive">
-
-	<table class="table table-striped table-bordered table-hover table-sm align-middle">
-
-		<thead class="table-dark">
-
-		<tr>
-
-			<th>CURP</th>
-
-			<th>NIA</th>
-
-			<th>Nombre</th>
-
-			<th>Plantel</th>
-
-			<th>Estatus</th>
-
-			<th>Tutor</th>
-
-			<th>Tel茅fono</th>
-
-
-		</tr>
-
-		</thead>
-
-<tbody>
-
-<?php foreach($resultados as $r): ?>
-
-<tr>
-	<td><?= htmlspecialchars($r["curp_alumno"]) ?></td>
-	<td><?= htmlspecialchars($r["nia_alumno"]) ?></td>
-<td>
-
-
-<?= htmlspecialchars(
-
-$r["apaterno_alumno"] .
-
-" " .
-
-$r["amaterno_alumno"] .
-
-" " .
-
-$r["nombre_alumno"]
-
-) ?>
-
-
-</td>
-
-
-<td><?= htmlspecialchars($r["plantel_alumno"]) ?></td>
-
-<td><?= htmlspecialchars($r["estatus_alumno"]) ?></td>
-
-<td><?= htmlspecialchars($r["nombre_tutor"]) ?></td>
-
-<td><?= htmlspecialchars($r["telefono_tutor"]) ?></td>
-
-<td>
-
-
-</td>
-
-</tr>
-
-
-
-<?php endforeach; ?>
-
-
-</tbody>
-
-
-</table>
-<?php if($buscar && $jsonVisible): ?>
-
-<hr>
-
-<div class="card mt-4">
-
-<div class="card-header bg-dark text-white">
-
-Respuesta JSON del WebService
-
-</div>
-
-<div class="card-body">
-
-<textarea
-id="jsonRespuesta"
-class="form-control"
-rows="20"
-readonly
-style="
-font-family:Consolas;
-background:#1E1E1E;
-color:#00FF88;
-">
-
-<?= json_encode(
-[
-    "success"=>true,
-    "total"=>$totalResultados,
-    "data"=>$resultados
-],
-JSON_PRETTY_PRINT |
-JSON_UNESCAPED_UNICODE |
-JSON_UNESCAPED_SLASHES
-) ?>
-
-</textarea>
-
-<br>
-
-<button
-class="btn btn-primary"
-onclick="copiarJson()">
-
- Copiar JSON
-
-</button>
-
-</div>
-
-</div>
-
-<?php endif; ?>
-
-
-</div>
-<?php endif; ?>
-<?php endif; ?>
-</div>
-
-</div>
-
-</div>
-
-<div class="modal fade" id="jsonModal" tabindex="-1">
-
-<div class="modal-dialog modal-lg">
-
-
-
-<div class="modal-content">
-
-
-
-<div class="modal-header bg-primary text-white">
-
-
-
-<h5 class="modal-title">
-
-
-
-Respuesta JSON del Web Service
-
-
-
-</h5>
-
-
-
-<button
-
-type="button"
-
-class="btn-close btn-close-white"
-
-data-bs-dismiss="modal">
-
-</button>
-
-
-
-</div>
-
-
-
-<div class="modal-body">
-
-
-
-<pre
-
-id="jsonViewer"
-
-style="
-
-background:#1E1E1E;
-
-color:#00FF88;
-
-padding:15px;
-
-border-radius:8px;
-
-max-height:500px;
-
-overflow:auto;
-
-font-size:13px;
-
-"></pre>
-
-
-
-</div>
-
-
-
-<div class="modal-footer">
-
-
-
-<button
-
-class="btn btn-success"
-
-onclick="copiarJson()">
-
-頎巾硧 Copiar JSON
-
-</button>
-
-<button
-
-class="btn btn-secondary"
-
-data-bs-dismiss="modal">
-
-Cerrar
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-
-<script>
-
-function mostrarJson(registro)
-{
-
-    let respuesta = {
-
-        success: true,
-
-        total: 1,
-
-        data: registro
-
-    };
-
-    document.getElementById("jsonViewer").textContent =
-        JSON.stringify(respuesta, null, 4);
-
-    new bootstrap.Modal(
-        document.getElementById("jsonModal")
-    ).show();
 </script>
 
-<script>
-
-function copiarJson(){
-
-    let t=document.getElementById("jsonRespuesta");
-
-    t.select();
-
-    document.execCommand("copy");
-
-    alert("JSON copiado.");
-
-}
-
-</script>
 
 
 </body>
